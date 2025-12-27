@@ -24,19 +24,26 @@ const app = express();
 ========================= */
 const allowedOrigins =
   process.env.NODE_ENV === "production"
-    ? ["https://velvettaspa.com", "https://cms.velvettaspa.com"]
+    ? [
+        "https://velvettaspa.com",
+        "https://www.velvettaspa.com",
+        "https://cms.velvettaspa.com",
+        "https://www.cms.velvettaspa.com",
+      ]
     : ["http://localhost:5173", "http://localhost:5174"];
 
 app.use(
   cors({
     origin(origin, callback) {
-      if (!origin) return callback(null, true); // curl / SSR
+      // allow curl / SSR / server-to-server
+      if (!origin) return callback(null, true);
 
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
 
-      return callback(new Error("Not allowed by CORS"));
+      console.error("❌ BLOCKED BY CORS:", origin);
+      return callback(null, false); // ⬅️ JANGAN throw Error
     },
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Authorization", "Content-Type"],
@@ -44,7 +51,6 @@ app.use(
   })
 );
 
-// WAJIB
 app.options("*", cors());
 
 /* =========================
