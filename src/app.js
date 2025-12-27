@@ -20,56 +20,6 @@ const __dirname = path.dirname(__filename);
 const app = express();
 
 /* =========================
-   CORS (FIX TOTAL)
-========================= */
-const allowedOrigins =
-  process.env.NODE_ENV === "production"
-    ? [
-        "https://velvettaspa.com",
-        "https://www.velvettaspa.com",
-        "https://cms.velvettaspa.com",
-        "https://www.cms.velvettaspa.com",
-      ]
-    : ["http://localhost:5173", "http://localhost:5174"];
-
-const corsOptions = {
-  origin(origin, callback) {
-    // allow curl / postman / SSR
-    if (!origin) return callback(null, true);
-
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-
-    console.warn("❌ CORS BLOCKED:", origin);
-    return callback(new Error("Not allowed by CORS"));
-  },
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Authorization", "Content-Type"],
-  credentials: true,
-  optionsSuccessStatus: 204,
-};
-
-app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
-
-/* =========================
-   BYPASS OPTIONS (WAJIB)
-========================= */
-app.use((req, res, next) => {
-  if (req.method === "OPTIONS") {
-    return res.sendStatus(204);
-  }
-  next();
-});
-
-/* =========================
-   SECURITY (SETELAH OPTIONS)
-========================= */
-app.use(helmetMiddleware);
-app.use(apiLimiter);
-
-/* =========================
    BODY PARSER
 ========================= */
 app.use(express.json({ limit: "10mb" }));
@@ -79,6 +29,40 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
    STATIC FILES
 ========================= */
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+
+/* =========================
+   SECURITY
+========================= */
+app.use(helmetMiddleware);
+app.use(apiLimiter);
+
+/* =========================
+   DEVELOPMENT CORS ONLY
+========================= */
+if (process.env.NODE_ENV !== "production") {
+  const allowedOrigins = ["http://localhost:5173", "http://localhost:5174"];
+
+  const corsOptions = {
+    origin(origin, callback) {
+      if (!origin) return callback(null, true); // curl / postman / SSR
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      return callback(new Error("Not allowed by CORS"));
+    },
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Authorization", "Content-Type"],
+    credentials: true,
+    optionsSuccessStatus: 204,
+  };
+
+  app.use(cors(corsOptions));
+  app.options("*", cors(corsOptions));
+
+  // Bypass OPTIONS
+  app.use((req, res, next) => {
+    if (req.method === "OPTIONS") return res.sendStatus(204);
+    next();
+  });
+}
 
 /* =========================
    ROUTES
