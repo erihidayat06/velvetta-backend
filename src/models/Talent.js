@@ -10,6 +10,14 @@ function ensureArray(value) {
     .filter((v) => v.length > 0);
 }
 
+const safeParse = (str) => {
+  try {
+    return str ? JSON.parse(str) : [];
+  } catch {
+    return [];
+  }
+};
+
 class Talent {
   static async create(talentData) {
     const { name, level, description, age, location, languages, specialties } =
@@ -42,12 +50,8 @@ class Talent {
     );
 
     if (rows[0]) {
-      rows[0].languages = rows[0].languages
-        ? JSON.parse(rows[0].languages)
-        : [];
-      rows[0].specialties = rows[0].specialties
-        ? JSON.parse(rows[0].specialties)
-        : [];
+      rows[0].languages = safeParse(rows[0].languages);
+      rows[0].specialties = safeParse(rows[0].specialties);
     }
 
     return rows[0] || null;
@@ -60,8 +64,8 @@ class Talent {
 
     return rows.map((row) => ({
       ...row,
-      languages: row.languages ? JSON.parse(row.languages) : [],
-      specialties: row.specialties ? JSON.parse(row.specialties) : [],
+      languages: safeParse(row.languages),
+      specialties: safeParse(row.specialties),
     }));
   }
 
