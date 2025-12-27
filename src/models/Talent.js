@@ -1,16 +1,35 @@
-import pool from '../config/database.js';
+import pool from "../config/database.js";
+
+function ensureArray(value) {
+  if (!value) return [];
+  if (Array.isArray(value)) return value;
+  // jika string CSV atau string tunggal, ubah jadi array
+  return value
+    .split(",")
+    .map((v) => v.trim())
+    .filter((v) => v.length > 0);
+}
 
 class Talent {
   static async create(talentData) {
-    const { name, level, description, age, location, languages, specialties } = talentData;
-    
-    const languagesJson = languages ? JSON.stringify(languages) : null;
-    const specialtiesJson = specialties ? JSON.stringify(specialties) : null;
-    
+    const { name, level, description, age, location, languages, specialties } =
+      talentData;
+
+    const languagesJson = JSON.stringify(ensureArray(languages));
+    const specialtiesJson = JSON.stringify(ensureArray(specialties));
+
     const [result] = await pool.execute(
       `INSERT INTO talents (name, level, description, age, location, languages, specialties, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
-      [name, level, description, age || null, location || null, languagesJson, specialtiesJson]
+     VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+      [
+        name,
+        level,
+        description,
+        age || null,
+        location || null,
+        languagesJson,
+        specialtiesJson,
+      ]
     );
 
     return this.findById(result.insertId);
@@ -21,12 +40,16 @@ class Talent {
       `SELECT * FROM talents WHERE id = ? AND deleted_at IS NULL`,
       [id]
     );
-    
+
     if (rows[0]) {
-      rows[0].languages = rows[0].languages ? JSON.parse(rows[0].languages) : [];
-      rows[0].specialties = rows[0].specialties ? JSON.parse(rows[0].specialties) : [];
+      rows[0].languages = rows[0].languages
+        ? JSON.parse(rows[0].languages)
+        : [];
+      rows[0].specialties = rows[0].specialties
+        ? JSON.parse(rows[0].specialties)
+        : [];
     }
-    
+
     return rows[0] || null;
   }
 
@@ -34,11 +57,11 @@ class Talent {
     const [rows] = await pool.execute(
       `SELECT * FROM talents WHERE deleted_at IS NULL ORDER BY created_at DESC`
     );
-    
-    return rows.map(row => ({
+
+    return rows.map((row) => ({
       ...row,
       languages: row.languages ? JSON.parse(row.languages) : [],
-      specialties: row.specialties ? JSON.parse(row.specialties) : []
+      specialties: row.specialties ? JSON.parse(row.specialties) : [],
     }));
   }
 
@@ -46,11 +69,11 @@ class Talent {
     const fields = [];
     const values = [];
 
-    Object.keys(updateData).forEach(key => {
+    Object.keys(updateData).forEach((key) => {
       if (updateData[key] !== undefined) {
-        if (key === 'languages' || key === 'specialties') {
+        if (key === "languages" || key === "specialties") {
           fields.push(`${key} = ?`);
-          values.push(JSON.stringify(updateData[key]));
+          values.push(JSON.stringify(ensureArray(updateData[key])));
         } else {
           fields.push(`${key} = ?`);
           values.push(updateData[key]);
@@ -60,11 +83,13 @@ class Talent {
 
     if (fields.length === 0) return this.findById(id);
 
-    fields.push('updated_at = NOW()');
+    fields.push("updated_at = NOW()");
     values.push(id);
 
     await pool.execute(
-      `UPDATE talents SET ${fields.join(', ')} WHERE id = ? AND deleted_at IS NULL`,
+      `UPDATE talents SET ${fields.join(
+        ", "
+      )} WHERE id = ? AND deleted_at IS NULL`,
       values
     );
 
@@ -72,10 +97,9 @@ class Talent {
   }
 
   static async delete(id) {
-    await pool.execute(
-      `UPDATE talents SET deleted_at = NOW() WHERE id = ?`,
-      [id]
-    );
+    await pool.execute(`UPDATE talents SET deleted_at = NOW() WHERE id = ?`, [
+      id,
+    ]);
     return true;
   }
 
@@ -98,10 +122,7 @@ class Talent {
   }
 
   static async deleteImage(imageId) {
-    await pool.execute(
-      `DELETE FROM talent_images WHERE id = ?`,
-      [imageId]
-    );
+    await pool.execute(`DELETE FROM talent_images WHERE id = ?`, [imageId]);
     return true;
   }
 
@@ -118,4 +139,3 @@ class Talent {
 }
 
 export default Talent;
-

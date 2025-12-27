@@ -2,6 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
+import cors from "cors";
 
 import { helmetMiddleware, apiLimiter } from "./middleware/security.js";
 
@@ -17,6 +18,19 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+
+/* =========================
+   DEV CORS ONLY
+========================= */
+if (process.env.NODE_ENV === "development") {
+  app.use(
+    cors({
+      origin: process.env.FRONTEND_URL || "http://localhost:5173", // ganti sesuai port frontend
+      methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization"],
+    })
+  );
+}
 
 /* =========================
    BODY PARSER
