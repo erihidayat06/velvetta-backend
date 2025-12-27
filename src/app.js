@@ -37,39 +37,30 @@ app.use(helmetMiddleware);
 app.use(apiLimiter);
 
 /* =========================
-   DEVELOPMENT CORS ONLY
+   CORS (DEVELOPMENT + PRODUCTION)
 ========================= */
-if (process.env.NODE_ENV !== "production") {
-  const allowedOrigins = [
-    "http://localhost:5173",
-    "http://localhost:5174",
-    "https://velvettaspa.com",
-    "https://www.velvettaspa.com",
-    "https://cms.velvettaspa.com",
-    "https://www.cms.velvettaspa.com",
-  ];
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "https://velvettaspa.com",
+  "https://www.velvettaspa.com",
+  "https://cms.velvettaspa.com",
+  "https://www.cms.velvettaspa.com",
+];
 
-  const corsOptions = {
-    origin(origin, callback) {
-      if (!origin) return callback(null, true); // curl / postman / SSR
-      if (allowedOrigins.includes(origin)) return callback(null, true);
-      return callback(new Error("Not allowed by CORS"));
-    },
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Authorization", "Content-Type"],
-    credentials: true,
-    optionsSuccessStatus: 204,
-  };
+const corsOptions = {
+  origin(origin, callback) {
+    if (!origin) return callback(null, true); // SSR, Postman, curl
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error("Not allowed by CORS"));
+  },
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Authorization", "Content-Type"],
+  credentials: true,
+};
 
-  app.use(cors(corsOptions));
-  app.options("*", cors(corsOptions));
-
-  // Bypass OPTIONS
-  app.use((req, res, next) => {
-    if (req.method === "OPTIONS") return res.sendStatus(204);
-    next();
-  });
-}
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions)); // otomatis handle preflight
 
 /* =========================
    ROUTES
