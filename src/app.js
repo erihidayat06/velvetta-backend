@@ -55,7 +55,6 @@ if (process.env.NODE_ENV !== "production") {
   };
 
   app.use(cors(corsOptions));
-  app.options("*", cors(corsOptions));
 
   // Bypass OPTIONS
   app.use((req, res, next) => {
