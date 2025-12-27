@@ -20,7 +20,7 @@ const __dirname = path.dirname(__filename);
 const app = express();
 
 /* =========================
-   CORS (FINAL & BENAR)
+   CORS (FIX TOTAL)
 ========================= */
 const allowedOrigins =
   process.env.NODE_ENV === "production"
@@ -32,29 +32,39 @@ const allowedOrigins =
       ]
     : ["http://localhost:5173", "http://localhost:5174"];
 
-app.use(
-  cors({
-    origin(origin, callback) {
-      // allow curl / SSR / server-to-server
-      if (!origin) return callback(null, true);
+const corsOptions = {
+  origin(origin, callback) {
+    // allow curl / postman / SSR
+    if (!origin) return callback(null, true);
 
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
 
-      console.error("❌ BLOCKED BY CORS:", origin);
-      return callback(null, false); // ⬅️ JANGAN throw Error
-    },
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Authorization", "Content-Type"],
-    credentials: true,
-  })
-);
+    console.warn("❌ CORS BLOCKED:", origin);
+    return callback(new Error("Not allowed by CORS"));
+  },
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Authorization", "Content-Type"],
+  credentials: true,
+  optionsSuccessStatus: 204,
+};
 
-app.options("*", cors());
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 
 /* =========================
-   SECURITY
+   BYPASS OPTIONS (WAJIB)
+========================= */
+app.use((req, res, next) => {
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(204);
+  }
+  next();
+});
+
+/* =========================
+   SECURITY (SETELAH OPTIONS)
 ========================= */
 app.use(helmetMiddleware);
 app.use(apiLimiter);
@@ -80,7 +90,7 @@ app.use("/api/blogs", blogRoutes);
 app.use("/api/home-config", homeConfigRoutes);
 
 /* =========================
-   ERROR HANDLER
+   404 HANDLER
 ========================= */
 app.use((req, res) => {
   res.status(404).json({
@@ -89,8 +99,11 @@ app.use((req, res) => {
   });
 });
 
+/* =========================
+   ERROR HANDLER
+========================= */
 app.use((err, req, res, next) => {
-  console.error("Error:", err);
+  console.error("🔥 ERROR:", err.message);
   res.status(err.status || 500).json({
     success: false,
     message: err.message || "Internal server error",
