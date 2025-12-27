@@ -65,11 +65,11 @@ const corsOptions = {
   optionsSuccessStatus: 204, // untuk preflight legacy browser
 };
 
-// gunakan middleware CORS
-app.use(cors(corsOptions));
+// // gunakan middleware CORS
+// app.use(cors(corsOptions));
 
-// handle preflight OPTIONS secara global
-app.options("*", cors(corsOptions));
+// // handle preflight OPTIONS secara global
+// app.options("*", cors(corsOptions));
 
 /* =========================
    ROUTES
