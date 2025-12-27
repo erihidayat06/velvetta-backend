@@ -49,18 +49,27 @@ const allowedOrigins = [
 ];
 
 const corsOptions = {
-  origin(origin, callback) {
-    if (!origin) return callback(null, true); // SSR, Postman, curl
-    if (allowedOrigins.includes(origin)) return callback(null, true);
-    return callback(new Error("Not allowed by CORS"));
+  origin: (origin, callback) => {
+    // allow requests like Postman, curl, SSR
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      return callback(new Error("Not allowed by CORS"));
+    }
   },
+  credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Authorization", "Content-Type"],
-  credentials: true,
+  optionsSuccessStatus: 204, // untuk preflight legacy browser
 };
 
+// gunakan middleware CORS
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions)); // otomatis handle preflight
+
+// handle preflight OPTIONS secara global
+app.options("*", cors(corsOptions));
 
 /* =========================
    ROUTES
@@ -86,6 +95,15 @@ app.use((req, res) => {
 ========================= */
 app.use((err, req, res, next) => {
   console.error("🔥 ERROR:", err.message);
+
+  // handle error CORS agar tidak crash
+  if (err.message === "Not allowed by CORS") {
+    return res.status(403).json({
+      success: false,
+      message: err.message,
+    });
+  }
+
   res.status(err.status || 500).json({
     success: false,
     message: err.message || "Internal server error",
