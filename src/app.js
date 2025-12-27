@@ -40,7 +40,14 @@ app.use(apiLimiter);
    DEVELOPMENT CORS ONLY
 ========================= */
 if (process.env.NODE_ENV !== "production") {
-  const allowedOrigins = ["http://localhost:5173", "http://localhost:5174"];
+  const allowedOrigins = [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "https://velvettaspa.com",
+    "https://www.velvettaspa.com",
+    "https://cms.velvettaspa.com",
+    "https://www.cms.velvettaspa.com",
+  ];
 
   const corsOptions = {
     origin(origin, callback) {
@@ -55,6 +62,7 @@ if (process.env.NODE_ENV !== "production") {
   };
 
   app.use(cors(corsOptions));
+  app.options("*", cors(corsOptions));
 
   // Bypass OPTIONS
   app.use((req, res, next) => {
