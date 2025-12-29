@@ -11,6 +11,29 @@ import { MAX_TALENT_IMAGES } from "../config/constants.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+function normalizeToJsonString(value) {
+  if (!value) return "[]"; // default kosong
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) return JSON.stringify(parsed);
+      return JSON.stringify([parsed]);
+    } catch {
+      // string CSV misal "coba,dulu"
+      return JSON.stringify(
+        value
+          .split(",")
+          .map((v) => v.trim())
+          .filter(Boolean)
+      );
+    }
+  } else if (Array.isArray(value)) {
+    return JSON.stringify(value);
+  }
+  // fallback
+  return JSON.stringify([value]);
+}
+
 function normalizeToJsonArray(input) {
   if (!input) return JSON.stringify([]);
 
@@ -210,11 +233,11 @@ class TalentService {
 
     // 🔥 FINAL NORMALIZATION (INI KUNCI)
     if ("languages" in updateData) {
-      updateData.languages = normalizeToJsonArray(updateData.languages);
+      updateData.languages = normalizeToJsonString(updateData.languages);
     }
 
     if ("specialties" in updateData) {
-      updateData.specialties = normalizeToJsonArray(updateData.specialties);
+      updateData.specialties = normalizeToJsonString(updateData.specialties);
     }
 
     // Handle removed images
