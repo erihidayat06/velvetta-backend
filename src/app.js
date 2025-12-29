@@ -20,17 +20,22 @@ const __dirname = path.dirname(__filename);
 const app = express();
 
 /* =========================
-   DEV CORS ONLY
+   CORS (DEV + PROD)
 ========================= */
-if (process.env.NODE_ENV === "development") {
-  app.use(
-    cors({
-      origin: process.env.FRONTEND_URL || "http://localhost:5173", // ganti sesuai port frontend
-      methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
-      allowedHeaders: ["Content-Type", "Authorization"],
-    })
-  );
-}
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL || "*",
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+app.options("*", cors());
+
+/* =========================
+   SECURITY (FIRST)
+========================= */
+app.use(helmetMiddleware);
+app.use(apiLimiter);
 
 /* =========================
    BODY PARSER
@@ -42,12 +47,6 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
    STATIC FILES
 ========================= */
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
-
-/* =========================
-   SECURITY
-========================= */
-app.use(helmetMiddleware);
-app.use(apiLimiter);
 
 /* =========================
    ROUTES
